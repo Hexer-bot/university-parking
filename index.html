@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>UniPark AI — Campus Transit System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= AUTH SCREEN ================= -->
+  <div id="authScreen" class="auth-overlay">
+    <div class="auth-glow"></div>
+    <div class="auth-card">
+      <div class="brand-badge-center">
+        <span class="badge-dot"></span>
+        CU SECURITY GATEWAY
+      </div>
+      <h2>Authorized Terminal</h2>
+      <p>Security guard credentials daal kar dashboard open karein[cite: 2].</p>
+
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+        <div class="input-field">
+          <label>Officer ID / Username</label>
+          <input type="text" id="loginUser" placeholder="guard01" value="guard01" required autocomplete="off">
+        </div>
+        <div class="input-field">
+          <label>Access PIN Code</label>
+          <input type="password" id="loginPass" placeholder="1234" value="1234" required>
+        </div>
+        
+        <div id="loginError" class="login-err-msg">Invalid Credentials! guard01 / 1234 use karein.</div>
+
+        <button type="submit" class="btn-cyan-glow">Authenticate & Open Gate</button>
+        
+        <!-- One-Click Instant Bypass -->
+        <button type="button" class="btn-demo-quick" onclick="forceBypassLogin()">
+          ⚡ Direct Demo Login (One Click)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APPLICATION ================= -->
+  <div id="appContainer" class="app-layout d-none">
+    
+    <!-- Left Navigation Bar -->
+    <aside class="sidebar">
+      <div>
+        <div class="brand-header">
+          <span class="brand-pill">CU</span>
+          <span class="brand-text">UNIPARK <span>AI</span></span>
+        </div>
+
+        <ul class="nav-menu">
+          <li><button class="nav-link active" onclick="navigate('tab-bays', this)"><span>⚡</span> Matrix Bays</button></li>
+          <li><button class="nav-link" onclick="navigate('tab-map', this)"><span>🗺</span> Campus Zones[cite: 11]</button></li>
+          <li><button class="nav-link" onclick="navigate('tab-registry', this)"><span>📋</span> Gate Log</button></li>
+          <li><button class="nav-link" onclick="navigate('tab-violations', this)"><span>⚠️</span> Violations[cite: 3, 11]</button></li>
+          <li><button class="nav-link" onclick="navigate('tab-profile', this)"><span>👤</span> Officer Profile</button></li>
+        </ul>
+      </div>
+
+      <div class="guard-pill-card">
+        <div class="guard-avatar">👮</div>
+        <div class="guard-info">
+          <strong>Officer Sahil</strong>
+          <small>Gate 1 • Online</small>
+        </div>
+        <button class="btn-logout" onclick="logoutApp()" title="Logout">⏻</button>
+      </div>
+    </aside>
+
+    <!-- Mobile Top Navigation Header -->
+    <div class="mobile-topbar">
+      <div class="brand-header">
+        <span class="brand-pill">CU</span>
+        <span class="brand-text">UNIPARK</span>
+      </div>
+      <button class="btn-logout" onclick="logoutApp()">Logout</button>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="main-viewport">
+      
+      <header class="top-announcement">
+        <div>
+          <span class="badge-live"><span class="pulse-dot"></span> REALTIME SENSORS ACTIVE</span>
+          <h1 id="pageTitle">Smart Bay Allocator</h1>
+          <p id="pageDesc">Manage parking spaces and avoid campus congestion[cite: 3, 9].</p>
+        </div>
+        <button class="btn-ghost" onclick="resetSlots()">Reset Data</button>
+      </header>
+
+      <!-- Stat Cards -->
+      <div class="stats-matrix">
+        <div class="stat-box aura-cyan">
+          <span class="stat-tag">Capacity</span>
+          <div class="stat-num" id="metricTotal">16</div>
+          <small>Monitored Bays</small>
+        </div>
+        <div class="stat-box aura-green">
+          <span class="stat-tag">Available</span>
+          <div class="stat-num" id="metricFree" style="color: var(--neon-green);">0</div>
+          <small>Instant Access</small>
+        </div>
+        <div class="stat-box aura-purple">
+          <span class="stat-tag">Occupancy</span>
+          <div class="stat-num" id="metricOccupancy" style="color: var(--neon-purple);">0%</div>
+          <small>Peak Load Rate[cite: 3, 4]</small>
+        </div>
+        <div class="stat-box aura-rose">
+          <span class="stat-tag">Fines Logged</span>
+          <div class="stat-num" id="metricFines" style="color: var(--neon-rose);">₹0</div>
+          <small>Roadside Parking[cite: 3, 5]</small>
+        </div>
+      </div>
+
+      <!-- ================= TAB 1: BAYS & ENTRY TERMINAL ================= -->
+      <div id="tab-bays" class="tab-screen active-screen">
+        <div class="workspace-grid">
+          
+          <div class="glass-card aura-panel">
+            <div class="card-head">
+              <h3>Academic Zone A Matrix[cite: 11]</h3>
+              <span class="legend"><span class="dot g"></span> Free | <span class="dot r"></span> Occupied</span>
+            </div>
+            <div class="bays-flex" id="baysGrid"></div>
+          </div>
+
+          <div class="glass-card aura-panel">
+            <div class="card-head">
+              <h3 style="color: var(--neon-cyan);">Vehicle Gate Entry</h3>
+            </div>
+            
+            <form id="checkInForm" onsubmit="handleCheckIn(event)">
+              <div class="input-field">
+                <label>Plate Number</label>
+                <input type="text" id="plateInput" placeholder="e.g. PB-65-AB-1234" required autocomplete="off">
+              </div>
+              <div class="input-field">
+                <label>Designation</label>
+                <select id="roleInput">
+                  <option value="Student">Student (Permit)</option>
+                  <option value="Faculty">Faculty (Staff Bay)[cite: 11]</option>
+                  <option value="Visitor">Visitor (Day Pass)</option>
+                </select>
+              </div>
+              <div class="input-field">
+                <label>Assign Bay</label>
+                <select id="slotSelect" required></select>
+              </div>
+              <button type="submit" class="btn-cyan-glow">Open Barrier & Issue Ticket</button>
+            </form>
+
+            <div class="pass-box" id="ticketPass">
+              <div class="pass-head">
+                <span>CAMPUS PASS</span>
+                <span id="ticketBay">BAY A-01</span>
+              </div>
+              <h2 id="ticketPlate">PB-65-XX-0000</h2>
+              <p id="ticketMeta">Student • Issued at Gate 1</p>
+              <div class="pass-barcode"></div>
+              <button class="btn-print" onclick="window.print()">Print Gate Token</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= TAB 2: INTERACTIVE CAMPUS MAP ================= -->
+      <div id="tab-map" class="tab-screen">
+        <div class="glass-card aura-panel">
+          <div class="card-head">
+            <h3>Campus Zone Floor Layout</h3>
+            <span style="font-size:0.8rem; color:var(--text-muted);">Select block to identify parking allocation[cite: 11]</span>
+          </div>
+
+          <div class="map-wrapper">
+            <svg viewBox="0 0 900 450" class="campus-svg">
+              <rect x="30" y="30" width="240" height="150" rx="14" class="svg-zone" onclick="selectMapZone('Zone A: Academic Block & Computer Labs')" />
+              <text x="150" y="115" class="svg-title">ACADEMIC BLOCK (ZONE A)[cite: 11]</text>
+
+              <rect x="330" y="30" width="240" height="150" rx="14" class="svg-zone" onclick="selectMapZone('Zone B: Student Hostels & Mess')" />
+              <text x="450" y="115" class="svg-title">HOSTELS COMPLEX (ZONE B)[cite: 11]</text>
+
+              <rect x="630" y="30" width="240" height="150" rx="14" class="svg-zone" onclick="selectMapZone('Zone C: Auditorium & Administrative Block')" />
+              <text x="750" y="115" class="svg-title">AUDITORIUM & ADMIN (ZONE C)[cite: 11]</text>
+
+              <path d="M 0 240 L 900 240" stroke="rgba(0, 240, 255, 0.2)" stroke-width="24" stroke-dasharray="16,14" />
+              <text x="450" y="246" fill="#8492a6" font-size="11" text-anchor="middle" font-weight="700">CAMPUS CENTRAL ARTERY (NO PARKING ZONE)[cite: 3, 5]</text>
+
+              <rect x="150" y="300" width="280" height="110" rx="14" class="svg-zone" onclick="selectMapZone('Zone D: EV Charging Stations & 2-Wheelers')" />
+              <text x="290" y="360" class="svg-title">EV & BIKE HUB (ZONE D)[cite: 10, 11]</text>
+
+              <rect x="520" y="300" width="280" height="110" rx="14" class="svg-zone-danger" onclick="selectMapZone('Emergency Ambulance Bay — Strictly Tow-away Zone')" />
+              <text x="660" y="360" class="svg-title" fill="var(--neon-rose)">EMERGENCY RUNWAY[cite: 3, 8]</text>
+            </svg>
+          </div>
+          <div id="mapFeedback" class="map-info-pill">Selected: Tap any block above to view details[cite: 11].</div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 3: GATE LOG REGISTRY ================= -->
+      <div id="tab-registry" class="tab-screen">
+        <div class="glass-card aura-panel">
+          <div class="card-head">
+            <h3>Live Gate Clearance Log</h3>
+            <input type="text" id="tableFilter" class="filter-box" placeholder="Filter plate or bay..." onkeyup="filterRegistryTable()">
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bay ID</th>
+                  <th>Vehicle Number</th>
+                  <th>Category</th>
+                  <th>Entry Time</th>
+                  <th>Parked Duration</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="registryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 4: VIOLATIONS & TOWING ================= -->
+      <div id="tab-violations" class="tab-screen">
+        <div class="workspace-grid">
+          
+          <div class="glass-card aura-panel">
+            <h3 style="color: var(--neon-rose); margin-bottom: 0.5rem;">Report Illegal Parking[cite: 3, 5]</h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.2rem;">
+              Report vehicles parked on double roads or blocking pedestrian walkways[cite: 3, 8].
+            </p>
+
+            <form id="violationForm" onsubmit="handleViolationSubmit(event)">
+              <div class="input-field">
+                <label>Offender Plate Number</label>
+                <input type="text" id="vioPlate" placeholder="e.g. HR-02-AK-9911" required>
+              </div>
+              <div class="input-field">
+                <label>Location on Campus</label>
+                <select id="vioLocation">
+                  <option value="Main Gate Double Road">Main Gate Double Road (Traffic Jam)[cite: 3, 4]</option>
+                  <option value="Emergency Ambulance Corridor">Ambulance Bay (Emergency Block)[cite: 3, 8]</option>
+                  <option value="Pedestrian Sidewalk">Pedestrian Sidewalk (Blocked Access)[cite: 3, 8]</option>
+                  <option value="Staff Bay Intrusion">Staff Reserved Spot Trespass[cite: 11]</option>
+                </select>
+              </div>
+              <div class="input-field">
+                <label>Fine Penalty (₹)</label>
+                <input type="number" id="vioFine" value="500">
+              </div>
+              <button type="submit" class="btn-cyan-glow" style="background: var(--neon-rose); box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);">
+                Issue Towing Warrant & Fine[cite: 11]
+              </button>
+            </form>
+          </div>
+
+          <div class="glass-card aura-panel">
+            <div class="card-head">
+              <h3>Active Violation Registry[cite: 3]</h3>
+            </div>
+            <div id="violationsList"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= TAB 5: OFFICER PROFILE ================= -->
+      <div id="tab-profile" class="tab-screen">
+        <div class="glass-card aura-panel" style="max-width: 600px; margin: 0 auto;">
+          <div class="profile-header">
+            <div class="profile-avatar">👮</div>
+            <div>
+              <h2 id="profileName">Officer Sahil Verma</h2>
+              <span class="badge-role">Head of Campus Parking & Traffic[cite: 1]</span>
+            </div>
+          </div>
+
+          <div class="profile-fields">
+            <div class="p-field">
+              <label>Duty Shift</label>
+              <strong>Morning Shift (08:00 AM - 04:00 PM)</strong>
+            </div>
+            <div class="p-field">
+              <label>Gate Node</label>
+              <strong>Gate 01 • Academic Quad Barrier</strong>
+            </div>
+            <div class="p-field">
+              <label>System Role</label>
+              <strong>Security Dispatcher / System Admin</strong>
+            </div>
+            <div class="p-field">
+              <label>Security Level</label>
+              <strong style="color:var(--neon-green);">Level 4 Master Key</strong>
+            </div>
+          </div>
+
+          <button class="btn-logout-full" onclick="logoutApp()">
+            Sign Out From Terminal
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Dock -->
+    <nav class="mobile-dock">
+      <button class="dock-btn active" onclick="navigate('tab-bays', this)">⚡<span>Bays</span></button>
+      <button class="dock-btn" onclick="navigate('tab-map', this)">🗺️<span>Map</span></button>
+      <button class="dock-btn" onclick="navigate('tab-registry', this)">📋<span>Log</span></button>
+      <button class="dock-btn" onclick="navigate('tab-violations', this)">⚠️<span>Fines</span></button>
+      <button class="dock-btn" onclick="navigate('tab-profile', this)">👤<span>Profile</span></button>
+    </nav>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
